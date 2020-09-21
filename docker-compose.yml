@@ -32,7 +32,6 @@ services:
       - postgres_service
   pgadmin_service:
     image: dpage/pgadmin4:latest
-    build: pgadmin/
     ports:
       - 80:80
     volumes:
