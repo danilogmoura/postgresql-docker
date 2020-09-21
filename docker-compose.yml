@@ -1,0 +1,46 @@
+version: "3"
+
+volumes:
+  posgresql_volume:
+  pgadmin_volume:
+
+services:
+  postgres_service:
+    image: postgres:12.3-alpine
+    user: postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - posgresql_volume:/var/lib/postgresql/data
+      - ./postgresql/config/postgresql.conf:/etc/postgresql.conf
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${PG_PASSWORD}
+      - POSTGRES_DB=${PG_DB}
+  flyway_service:
+    image: flyway/flyway:6.4.3-alpine
+    volumes:
+      - ${DIR_PG_SCRIPTS}:/flyway/sql
+    environment:
+      - FLYWAY_URL=jdbc:postgresql://postgres_service/${PG_DB}
+      - FLYWAY_USER=postgres
+      - FLYWAY_PASSWORD=${PG_PASSWORD}
+      - FLYWAY_SCHEMAS=public
+      - FLYWAY_CONNECT_RETRIES=60
+    command: migrate
+    depends_on:
+      - postgres_service
+  pgadmin_service:
+    image: dpage/pgadmin4:latest
+    build: pgadmin/
+    ports:
+      - 80:80
+    volumes:
+      - pgadmin_volume:/pgadmin4
+      - ./pgadmin/config/servers.json:/pgadmin4/servers.json
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
+    depends_on:
+      - postgres_service
+      - flyway_service
